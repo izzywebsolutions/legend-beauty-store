@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { ShoppingBag, Star } from "lucide-react"
 import { useCart } from "@/lib/CartContext"
 import { Product } from "@/lib/data"
@@ -30,12 +31,12 @@ export const ProductCard = memo(function ProductCard({ product, onClick }: Produ
       
       {/* Image Container */}
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-cream/50 shadow-sm border border-plum/5 group-hover:shadow-md transition-all duration-500">
-        <img
+        <Image
           src={product.imageUrl || IMAGE_FALLBACK}
           alt={product.name}
-          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
-          loading="lazy"
-          decoding="async"
+          fill
+          sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
+          className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
           onError={handleImageError}
         />
         
