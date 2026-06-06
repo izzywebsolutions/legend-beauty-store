@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/input"
 import { getLocalProducts, deleteLocalProduct, getCategories, Product } from "@/lib/data"
 import { Plus, Search, Edit, Trash2 } from "lucide-react"
+import { MediaSourceBadge } from "@/components/ui/MediaSourceBadge"
 
 export default function AdminProductsPage() {
   const [search, setSearch] = useState("")
@@ -138,7 +139,10 @@ export default function AdminProductsPage() {
                                </div>
                                <div>
                                   <p className="font-medium text-plum line-clamp-1">{product.name}</p>
-                                  <p className="text-xs text-plum/50 mt-0.5">ID: {product.id.substring(0, 8)}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                     <p className="text-xs text-plum/50">ID: {product.id.substring(0, 8)}</p>
+                                     <MediaSourceBadge url={product.imageUrl} />
+                                  </div>
                                </div>
                             </div>
                          </td>

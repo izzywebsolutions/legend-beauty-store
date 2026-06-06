@@ -5,24 +5,23 @@ import Image from "next/image"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Trash2, Video, ImageIcon } from "lucide-react"
+import { Upload, Check, Trash2, Video, ImageIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getSiteSettings, saveSiteSettings, SiteSettings } from "@/lib/data"
 import { supabase, uploadFile, deleteFile, listFiles, renameFile } from "@/lib/supabaseClient"
 import { MediaUpload } from "@/components/ui/media-upload"
-import { useToast } from "@/components/ui/Toast"
-import Link from "next/link"
-import { ExternalLink, Eye } from "lucide-react"
+import { MediaSourceBadge } from "@/components/ui/MediaSourceBadge"
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SiteSettings | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [mediaFiles, setMediaFiles] = useState<any[]>([])
   const [loadingMedia, setLoadingMedia] = useState(true)
   const [renamingFile, setRenamingFile] = useState<string | null>(null)
   const [newFileName, setNewFileName] = useState("")
   const router = useRouter()
-  const { toast } = useToast()
 
   const fetchMedia = async () => {
     setLoadingMedia(true)
@@ -46,16 +45,18 @@ export default function AdminSettingsPage() {
      if (!settings) return
      
      setIsSubmitting(true)
+     setSaveError(null)
      try {
         await saveSiteSettings(settings)
-        toast("Settings saved successfully", "success")
+        setShowSuccess(true)
         // Re-fetch settings to confirm they saved correctly
         const fresh = await getSiteSettings()
         setSettings(fresh)
         router.refresh()
+        setTimeout(() => setShowSuccess(false), 3000)
      } catch (err: any) {
         console.error("Save error:", err)
-        toast(err?.message || "Failed to save settings", "error")
+        setSaveError(err?.message || "Failed to save settings. Check your Supabase connection and RLS policies.")
      } finally {
         setIsSubmitting(false)
      }
@@ -144,17 +145,9 @@ export default function AdminSettingsPage() {
     <div className="space-y-6 max-w-3xl">
       
       {/* Page Header */}
-      <div className="flex items-center justify-between gap-4">
-         <div>
-            <h1 className="font-serif text-3xl text-plum mb-1">Store Settings</h1>
-            <p className="text-sm text-plum/60">Manage your store's content, logo, and promotional banners.</p>
-         </div>
-         <Button variant="outline" size="sm" className="flex items-center gap-2 shrink-0" asChild>
-            <Link href="/" target="_blank" rel="noopener noreferrer">
-               <ExternalLink className="h-4 w-4" />
-               Preview Store
-            </Link>
-         </Button>
+      <div>
+         <h1 className="font-serif text-3xl text-plum mb-1">Store Settings</h1>
+         <p className="text-sm text-plum/60">Manage your store's content, logo, and promotional banners.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -168,7 +161,12 @@ export default function AdminSettingsPage() {
                 <div className="mt-2 flex items-center gap-6">
                    <div className="relative h-20 w-20 rounded-xl bg-cream border border-plum/10 overflow-hidden flex items-center justify-center flex-shrink-0">
                       {settings.logoUrl && settings.logoUrl !== "/logo.jpg" ? (
-                        <Image src={settings.logoUrl} alt="Logo Preview" fill className="object-contain" />
+                        <>
+                           <Image src={settings.logoUrl} alt="Logo Preview" fill className="object-contain" />
+                           <div className="absolute bottom-1 right-1">
+                              <MediaSourceBadge url={settings.logoUrl} className="scale-75 origin-bottom-right" />
+                           </div>
+                        </>
                       ) : (
                         <span className="text-xs text-plum/40 font-serif">LBS (Default)</span>
                       )}
@@ -449,8 +447,11 @@ export default function AdminSettingsPage() {
                          {media.type === "image" ? (
                             <Image src={media.url} alt={`Hero ${idx}`} fill className="object-cover" />
                          ) : (
-                            <video src={media.url} controls className="w-full h-full object-cover" />
+                            <video src={media.url} className="w-full h-full object-cover" />
                          )}
+                         <div className="absolute top-1 left-1 z-10">
+                            <MediaSourceBadge url={media.url} className="scale-75 origin-top-left" />
+                         </div>
                          <button 
                            type="button" 
                            onClick={() => removeHeroMedia(idx)}
@@ -589,6 +590,9 @@ export default function AdminSettingsPage() {
                          ) : (
                            <ImageIcon className="h-8 w-8 text-plum/30" />
                          )}
+                         <div className="absolute top-1 left-1 z-10">
+                            <MediaSourceBadge url={file.publicUrl} className="scale-75 origin-top-left" />
+                         </div>
                          <button 
                            type="button" 
                            onClick={() => handleMediaDelete(file)}
@@ -635,20 +639,23 @@ export default function AdminSettingsPage() {
 
 
          {/* Submit Action */}
-         <div className="sticky bottom-6 z-20 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-plum/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-            <div className="text-xs text-plum/50 italic hidden sm:block order-2 sm:order-1">
-               Last updated: {settings.updated_at ? new Date(settings.updated_at).toLocaleString() : "Recently"}
-            </div>
-            <div className="flex items-center justify-end gap-3 order-1 sm:order-2 w-full sm:w-auto">
-               <Button type="button" variant="outline" className="flex-1 sm:flex-none" asChild>
-                  <Link href="/" target="_blank" rel="noopener noreferrer">
-                     <Eye className="h-4 w-4 mr-2" />
-                     Preview
-                  </Link>
+         <div className="space-y-3 border-t border-plum/10 pt-6">
+            {saveError && (
+               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  <strong>Save failed:</strong> {saveError}
+               </div>
+            )}
+            <div className="flex items-center gap-4">
+               <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving Changes..." : "Save Settings"}
                </Button>
-               <Button type="submit" disabled={isSubmitting} className="shadow-lg shadow-plum/20 flex-1 sm:flex-none">
-                  {isSubmitting ? "Saving Changes..." : "Save All Settings"}
-               </Button>
+               
+               {showSuccess && (
+                  <div className="flex items-center text-green-600 text-sm font-medium">
+                     <Check className="h-4 w-4 mr-1" />
+                     Settings saved successfully
+                  </div>
+               )}
             </div>
          </div>
 

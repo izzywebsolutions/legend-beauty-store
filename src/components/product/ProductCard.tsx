@@ -1,10 +1,8 @@
-import Image from "next/image"
 import { ShoppingBag, Star } from "lucide-react"
 import { useCart } from "@/lib/CartContext"
 import { Product } from "@/lib/data"
 import { memo } from "react"
-import { handleImageError, IMAGE_FALLBACK } from "@/lib/image-utils"
-import { useRouter } from "next/navigation"
+import { handleImageError } from "@/lib/image-utils"
 
 export interface ProductCardProps {
   product: Product
@@ -13,30 +11,21 @@ export interface ProductCardProps {
 
 export const ProductCard = memo(function ProductCard({ product, onClick }: ProductCardProps) {
   const { addToCart } = useCart()
-  const router = useRouter()
-
-  const handleCardClick = () => {
-    if (onClick) {
-      onClick(product)
-    } else {
-      router.push(`/product/${product.id}`)
-    }
-  }
 
   return (
     <div 
-      onClick={handleCardClick}
+      onClick={() => onClick?.(product)}
       className="group relative flex flex-col gap-3 transition-all duration-500 cursor-pointer"
     >
       
       {/* Image Container */}
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-cream/50 shadow-sm border border-plum/5 group-hover:shadow-md transition-all duration-500">
-        <Image
-          src={product.imageUrl || IMAGE_FALLBACK}
+        <img
+          src={product.imageUrl || "/placeholder.png"}
           alt={product.name}
-          fill
-          sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
-          className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+          loading="lazy"
+          decoding="async"
           onError={handleImageError}
         />
         

@@ -12,6 +12,7 @@ import { Upload, X, ChevronLeft, Save } from "lucide-react"
 import { ProductCard } from "@/components/product/ProductCard"
 import { ProductModal } from "@/components/product/ProductModal"
 import { MediaUpload } from "@/components/ui/media-upload"
+import { MediaSourceBadge } from "@/components/ui/MediaSourceBadge"
 import { CartProvider } from "@/lib/CartContext"
 import { useToast } from "@/components/ui/Toast"
 import { IMAGE_FALLBACK } from "@/lib/image-utils"
@@ -186,6 +187,9 @@ export default function EditProductPage() {
                   className="relative aspect-square rounded-xl overflow-hidden bg-cream border border-plum/10 group cursor-move"
                 >
                   <Image src={img} alt={`Product ${index}`} fill className="object-cover" />
+                  <div className="absolute top-1 left-1 z-10">
+                    <MediaSourceBadge url={img} className="scale-75 origin-top-left" />
+                  </div>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors pointer-events-none" />
                   <button 
                     onClick={() => removeImage(index)}

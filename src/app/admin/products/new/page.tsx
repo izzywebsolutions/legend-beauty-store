@@ -12,6 +12,7 @@ import { supabase, deleteFile } from "@/lib/supabaseClient"
 import { ProductCard } from "@/components/product/ProductCard"
 import { ProductModal } from "@/components/product/ProductModal"
 import { MediaUpload } from "@/components/ui/media-upload"
+import { MediaSourceBadge } from "@/components/ui/MediaSourceBadge"
 import { CartProvider } from "@/lib/CartContext"
 import { useToast } from "@/components/ui/Toast"
 import { ProductOption, ProductVariant } from "@/lib/data/products"
@@ -486,6 +487,9 @@ export default function AddProductPage() {
                        className="relative aspect-square rounded-md overflow-hidden group cursor-move border border-plum/10"
                      >
                         <img src={img} alt={`Upload ${idx}`} className="w-full h-full object-cover" />
+                        <div className="absolute top-1 left-1 z-10">
+                           <MediaSourceBadge url={img} className="scale-75 origin-top-left" />
+                        </div>
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors pointer-events-none" />
                         <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow z-10">
                            <X className="h-4 w-4 text-red-500" />
