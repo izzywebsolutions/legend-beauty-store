@@ -4,6 +4,7 @@ import path from "path";
 import "./globals.css";
 
 import { getSiteSettings } from "@/lib/data"
+import { ToastProvider } from "@/components/ui/Toast";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
@@ -93,7 +94,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="bg-white text-black antialiased">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

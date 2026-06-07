@@ -1,34 +1,90 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
- 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Protect all /admin routes
-  if (pathname.startsWith('/admin')) {
-    
-    // Always allow access to the login page
-    if (pathname === '/admin/login') {
-      return NextResponse.next()
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    // Allow access to login page
+    if (request.nextUrl.pathname === '/admin/login') {
+      // If user is already logged in as admin, redirect to dashboard
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        
+        if (profile?.role === 'admin') {
+          return NextResponse.redirect(new URL('/admin', request.url))
+        }
+      }
+      return response
     }
 
-    // Check for the custom auth cookie set during login
-    // This provides network-level protection for the admin dashboard
-    const hasAuthCookie = request.cookies.has('sb-auth-token');
-
-    if (!hasAuthCookie) {
-      // Redirect to login if no active session token is found
-      const loginUrl = new URL('/admin/login', request.url)
-      return NextResponse.redirect(loginUrl)
+    // Redirect to login if not authenticated
+    if (!user) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
-    return NextResponse.next()
+    // Role-based check: Only admin can access /admin/*
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      // If not admin, sign out and redirect to login
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
   }
- 
-  return NextResponse.next()
+
+  return response
 }
 
 export const config = {
-  // Match all /admin routes
-  matcher: ['/admin/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }

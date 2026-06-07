@@ -11,6 +11,7 @@ import { getSiteSettings, SiteSettings } from "@/lib/data"
 import { Logo } from "@/components/ui/Logo"
 import { ToastProvider } from "@/components/ui/Toast"
 import { motion, AnimatePresence } from "framer-motion"
+import { logout } from "@/app/actions/auth"
 
 export default function AdminLayout({
    children,
@@ -58,6 +59,18 @@ export default function AdminLayout({
          if (error || !session?.user) {
            router.push("/admin/login")
          } else {
+           // Role check
+           const { data: profile } = await supabase
+             .from('profiles')
+             .select('role')
+             .eq('id', session.user.id)
+             .single()
+
+           if (profile?.role !== 'admin') {
+             await logout()
+             return
+           }
+
            setUser(session.user)
            const siteSettings = await getSiteSettings()
            if (mounted) {
@@ -78,12 +91,9 @@ export default function AdminLayout({
        mounted = false;
      }
    }, [router, isLoginPage])
+
    const handleLogOut = async () => {
-      await supabase.auth.signOut()
-      // Clear the middleware auth cookie
-      document.cookie = 'sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; samesite=lax'
-      router.push("/admin/login")
-      router.refresh()
+      await logout()
    }
 
    const toggleSidebar = useCallback(() => {
@@ -114,7 +124,6 @@ export default function AdminLayout({
    ]
 
    return (
-    <ToastProvider>
       <div className="flex min-h-screen bg-cream overflow-hidden">
 
          {/* Mobile Overlay */}
@@ -230,6 +239,5 @@ export default function AdminLayout({
          </div>
 
       </div>
-    </ToastProvider>
    )
 }
